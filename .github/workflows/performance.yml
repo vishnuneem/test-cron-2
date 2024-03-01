@@ -1,0 +1,48 @@
+name: Lighthouse Cron Job
+on:
+  # Triggers the workflow every 10 minutes
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+env:
+  APP_LOCAL_SITE_URL: https://allthingsbeauty-global.netlify.app
+
+
+
+jobs:
+  cron:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Use Node.js 12
+        uses: actions/setup-node@v1
+        with:
+          node-version: 12
+      - name: Audit URLs using Lighthouse
+        uses: treosh/lighthouse-ci-action@v7
+        with:
+          urls: |
+            ${{ env.APP_LOCAL_SITE_URL }}/id-id/
+            ${{ env.APP_LOCAL_SITE_URL }}/id-id/rambut
+            ${{ env.APP_LOCAL_SITE_URL }}/id-id/rambut/gaya-rambut
+            ${{ env.APP_LOCAL_SITE_URL }}/id-id/rambut/gaya-rambut/cara-mengepang-poni
+            ${{ env.APP_LOCAL_SITE_URL }}/id-id/semua-produk/jenis-produk/shampoo-untuk-memanjangkan-rambut
+            ${{ env.APP_LOCAL_SITE_URL }}/id-id/rambut/gaya-rambut/model-rambut-pendek-sebahu
+            ${{ env.APP_LOCAL_SITE_URL }}/id-id/semua-produk/tresemme-root-touch-up-spray-light-brown
+          uploadArtifacts: true # save results as an action artifacts
+
+      # - name: Deploy report page
+      #   uses: peaceiris/actions-gh-pages@v3
+      #   with:
+      #     github_token: ${{ secrets.GITHUB_TOKEN }}
+      #     publish_dir: ./.lighthouseci
+      #     keep_files: true
+      #     user_name: 'github-actions[bot]'
+      #     user_email: 'github-actions[bot]@users.noreply.github.com'
+      - name: Get report URL's
+        run: |
+          find ./.lighthouseci -maxdepth 1 -type f -name "*report.html" > cron-reports.txt
+          sed -i 's|.html|.html\n\n|g'  cron-reports.txt
+          echo -e "Lighthouse test results:\n\n$(cat ./cron-reports.txt)" > temp && mv temp ./cron-reports.txt
+
+      - name: Comment links 
+        run: cat ./cron-reports.txt
